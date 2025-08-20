@@ -1,0 +1,5 @@
+﻿{
+  "terminal.integrated.env.windows": {
+    "Path": "C:\\Users\\alexander\\scoop\\apps\\nodejs-lts\\current\\bin;C:\\Users\\alexander\\scoop\\apps\\nodejs-lts\\current;${env:Path}"
+  }
+}

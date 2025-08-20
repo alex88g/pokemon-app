@@ -1,0 +1,77 @@
+{
+  "name": "iths-react-native-lab2",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start -c",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~5.0.4",
+    "@expo/vector-icons": "^14.1.0",
+    "@expo/webpack-config": "^19.0.1",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "8.4.1",
+    "@react-navigation/elements": "^2.6.3",
+    "@react-navigation/native": "^7.1.17",
+    "@react-navigation/native-stack": "^6.9.26",
+    "@react-navigation/stack": "^7.4.7",
+    "@shopify/flash-list": "1.7.6",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "expo": "53.0.20",
+    "expo-constants": "~17.1.7",
+    "expo-dev-client": "~5.2.4",
+    "expo-linear-gradient": "~14.1.5",
+    "expo-notifications": "~0.31.4",
+    "expo-splash-screen": "~0.30.10",
+    "express": "^5.1.0",
+    "luxon": "^3.7.1",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-paper": "^5.12.5",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-vector-icons": "^10.3.0",
+    "react-native-web": "^0.20.0",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@expo/cli": "^0.24.20",
+    "@react-native/eslint-config": "^0.74.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^24.3.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "~19.0.10",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.8.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
+  }
+}
