@@ -59,7 +59,8 @@ export default function FavoritesScreen() {
   const WebGrid = () => (
     <View style={{ flex: 1, alignItems: 'center' }}>
       {count === 0 ? (
-        <View style={[styles.list, { width: contentWidth }]}>{EmptyState}</View>
+        // ⬅️ Viktigt: flex:1 så tomvyn får höjd
+        <View style={[styles.list, styles.fill, { width: contentWidth }]}>{EmptyState}</View>
       ) : (
         <View
           style={[
@@ -175,7 +176,8 @@ export default function FavoritesScreen() {
       ) : (
         <View style={{ flex: 1 }}>
           {count === 0 ? (
-            <View style={styles.list}>{EmptyState}</View>
+            // ⬅️ Viktigt: flex:1 så tomvyn får höjd
+            <View style={[styles.list, styles.fill]}>{EmptyState}</View>
           ) : (
             <ListComponent
               data={favorites}
@@ -245,6 +247,11 @@ const styles = StyleSheet.create({
   gridContainer: {
     paddingHorizontal: 12,
   } as any,
+
+  // ⬅️ Används för att ge höjd åt tomvyn
+  fill: {
+    flex: 1,
+  },
 
   emptyContainer: {
     flex: 1,
