@@ -91,16 +91,15 @@ export default function SettingsScreen() {
   const [notifTime, setNotifTime] = useState<Date>(makeDefaultTime());
   const [timeHydrated, setTimeHydrated] = useState(false);
 
-  // web push token
+  // web push token (används ej på webben nu när UI är dolt, men behålls för native/web-logik vid behov)
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
 
   // modaler / pickers
   const [timeModalVisible, setTimeModalVisible] = useState(false); // iOS
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false); // Android
-  const [webTimeModalVisible, setWebTimeModalVisible] = useState(false); // Web
   const [infoVisible, setInfoVisible] = useState(false); // info-modal
 
-  // web-modal inputs
+  // web-modal inputs (behålls för ev. framtida bruk, men ingen webbtidsmodal visas)
   const [webHour, setWebHour] = useState('18');
   const [webMinute, setWebMinute] = useState('00');
 
@@ -137,40 +136,8 @@ export default function SettingsScreen() {
 
   async function enableNotifications(hour: number, minute: number) {
     if (isWeb) {
-      // Web: registrera push + be om rättigheter + hämta token
-      setBusy(true, 'Aktiverar web push...');
-      try {
-        const token = await registerForPushNotifications();
-        if (token) {
-          setExpoPushToken(token);
-          await AsyncStorage.setItem(STORAGE_EXPO_PUSH_TOKEN, token);
-
-          // ⬇️ Skicka till backend för serverstyrd daglig push
-          try {
-            await subscribe(token, hour, minute, Intl.DateTimeFormat().resolvedOptions().timeZone);
-          } catch (e) {
-            console.warn('subscribe failed', e);
-          }
-
-          Alert.alert('Aktiverat', 'Web push är aktiverat. Dagliga påminnelser skickas via push.');
-        } else {
-          Alert.alert(
-            'Behörighet saknas',
-            'Webbläsaren blockerade notiser. Tillåt notiser i webbläsarens inställningar och försök igen.',
-          );
-        }
-
-        setNotificationsEnabled(true);
-        await AsyncStorage.multiSet([
-          [STORAGE_NOTIF_ENABLED, 'true'],
-          [
-            STORAGE_NOTIF_TIME,
-            `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-          ],
-        ]);
-      } finally {
-        setBusy(false);
-      }
+      // 🔒 Webben: UI för notiser är dolt. Skydda även logiskt om någon ändå når hit.
+      Alert.alert('Ej tillgängligt', 'Aviseringar stöds endast i mobilappar.');
       return;
     }
 
@@ -206,18 +173,8 @@ export default function SettingsScreen() {
 
   async function disableNotifications() {
     if (isWeb) {
-      // ⬇️ Avregistrera i backend (om token finns)
-      if (expoPushToken) {
-        try {
-          await unsubscribe(expoPushToken);
-        } catch (e) {
-          console.warn('unsubscribe failed', e);
-        }
-      }
-
-      setNotificationsEnabled(false);
-      await AsyncStorage.setItem(STORAGE_NOTIF_ENABLED, 'false');
-      Alert.alert('Aviseringar av', 'Web push är avstängt.');
+      // 🔒 Webben: UI för notiser är dolt. Skydda även logiskt.
+      Alert.alert('Ej tillgängligt', 'Aviseringar stöds endast i mobilappar.');
       return;
     }
 
@@ -250,23 +207,16 @@ export default function SettingsScreen() {
         `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
       );
 
+      // Endast native: reschedulera lokala notiser
       if (!isWeb && notificationsEnabled) {
         await cancelAllReminders();
         await scheduleDailyReminder(h, m);
         Alert.alert('Uppdaterat', `Påminnelsetid ändrad till ${fmtTime(newDate)}.`);
       }
 
-      // web: uppdatera inputs + meddela backend om ny tid
+      // Behåll intern state för eventuellt framtida bruk
       setWebHour(String(h).padStart(2, '0'));
       setWebMinute(String(m).padStart(2, '0'));
-
-      if (isWeb && notificationsEnabled && expoPushToken) {
-        try {
-          await updateTime(expoPushToken, h, m, Intl.DateTimeFormat().resolvedOptions().timeZone);
-        } catch (e) {
-          console.warn('update-time failed', e);
-        }
-      }
     } finally {
       setBusy(false);
     }
@@ -282,7 +232,7 @@ export default function SettingsScreen() {
   const openTimePicker = () => {
     if (Platform.OS === 'android') setAndroidPickerOpen(true);
     else if (Platform.OS === 'ios') setTimeModalVisible(true);
-    else setWebTimeModalVisible(true); // web
+    // 🔒 Webben har inget tidpicker-UI (dolt).
   };
 
   const sendFeedback = () => {
@@ -345,31 +295,38 @@ export default function SettingsScreen() {
               right={() => <Switch value={isDarkMode} onValueChange={toggleTheme} />}
             />
             <Divider />
-            <List.Item
-              title="Aktivera aviseringar"
-              description={`Daglig påminnelse ${timeHydrated ? fmtTime(notifTime) : ''}`}
-              left={(p) => <List.Icon {...p} icon="bell-outline" />}
-              right={() => (
-                <Switch
-                  value={notificationsEnabled}
-                  onValueChange={onToggleNotifications}
-                  disabled={!notifHydrated || !timeHydrated}
+
+            {/* 🔒 Aviseringsinställningar visas endast i mobilappar (iOS/Android) */}
+            {!isWeb && (
+              <>
+                <List.Item
+                  title="Aktivera aviseringar"
+                  description={`Daglig påminnelse ${timeHydrated ? fmtTime(notifTime) : ''}`}
+                  left={(p) => <List.Icon {...p} icon="bell-outline" />}
+                  right={() => (
+                    <Switch
+                      value={notificationsEnabled}
+                      onValueChange={onToggleNotifications}
+                      disabled={!notifHydrated || !timeHydrated}
+                    />
+                  )}
                 />
-              )}
-            />
+                <List.Item
+                  title="Tid för daglig påminnelse"
+                  description={timeHydrated ? fmtTime(notifTime) : ''}
+                  left={(p) => <List.Icon {...p} icon="clock-outline" />}
+                  onPress={openTimePicker}
+                />
+                <Divider />
+              </>
+            )}
+
             <List.Item
-              title="Tid för daglig påminnelse"
-              description={timeHydrated ? fmtTime(notifTime) : ''}
-              left={(p) => <List.Icon {...p} icon="clock-outline" />}
-              onPress={openTimePicker}
-            />
-            <Divider />
-            <List.Item
-              title="Visa modal"
-              description="Öppna en modal med information"
-              left={(p) => <List.Icon {...p} icon="information-outline" />}
-              onPress={() => setInfoVisible(true)}
-            />
+  title="Visa info"
+  description="Se information om mörkt och ljust läge"
+  left={(p) => <List.Icon {...p} icon="information-outline" />}
+  onPress={() => setInfoVisible(true)}
+/>
           </Card.Content>
         </Card>
 
@@ -392,8 +349,8 @@ export default function SettingsScreen() {
               Rensa appdata
             </Button>
 
-            {/* Native – lokal testnotis */}
-            {notificationsEnabled && !isWeb && (
+            {/* Native – lokal testnotis (dold på webben) */}
+            {!isWeb && notificationsEnabled && (
               <Button
                 mode="contained-tonal"
                 style={{ marginTop: 8 }}
@@ -404,8 +361,8 @@ export default function SettingsScreen() {
               </Button>
             )}
 
-            {/* Web – push-test via Expo Push direkt */}
-            {isWeb && notificationsEnabled && (
+            {/* Web – web push test (helt dolt nu) */}
+            {false && isWeb && notificationsEnabled && (
               <Button
                 mode="contained-tonal"
                 style={{ marginTop: 8 }}
@@ -477,79 +434,38 @@ export default function SettingsScreen() {
         <DateTimePicker mode="time" value={notifTime} onChange={onAndroidTimeChange} />
       )}
 
-      {/* Web – enkel tidväljare */}
-      <Portal>
-        <Modal
-          visible={isWeb && webTimeModalVisible}
-          onDismiss={() => setWebTimeModalVisible(false)}
-          contentContainerStyle={[
-            styles.modalCard,
-            { backgroundColor: theme.colors.surface, borderRadius: theme.roundness + 8 },
-          ]}
-        >
-          <Text variant="titleLarge" style={{ marginBottom: 8 }}>
-            Välj tid
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TextInput
-              label="Timme"
-              value={webHour}
-              onChangeText={(t) => setWebHour(t.replace(/[^0-9]/g, '').slice(0, 2))}
-              keyboardType="number-pad"
-              style={{ flex: 1 }}
-            />
-            <TextInput
-              label="Minut"
-              value={webMinute}
-              onChangeText={(t) => setWebMinute(t.replace(/[^0-9]/g, '').slice(0, 2))}
-              keyboardType="number-pad"
-              style={{ flex: 1 }}
-            />
-          </View>
-          <Button
-            mode="contained"
-            style={{ marginTop: 12 }}
-            onPress={async () => {
-              const h = Math.min(23, Math.max(0, Number(webHour || 0)));
-              const m = Math.min(59, Math.max(0, Number(webMinute || 0)));
-              const d = new Date(notifTime);
-              d.setHours(h, m, 0, 0);
-              await saveTimeAndMaybeReschedule(d);
-              setWebTimeModalVisible(false);
-            }}
-          >
-            Spara
-          </Button>
-          <Button onPress={() => setWebTimeModalVisible(false)} style={{ marginTop: 6 }}>
-            Avbryt
-          </Button>
-        </Modal>
-      </Portal>
-
+      {/* Web – ingen tidväljare / notis-UI renderas */}
       {/* Info-modal */}
       <Portal>
-        <Modal
-          visible={infoVisible}
-          onDismiss={() => setInfoVisible(false)}
-          contentContainerStyle={[
-            styles.modalCard,
-            { backgroundColor: theme.colors.surface, borderRadius: theme.roundness + 8 },
-          ]}
-        >
-          <Text variant="titleLarge" style={{ marginBottom: 8 }}>
-            Modal
-          </Text>
-          <Text
-            variant="bodyMedium"
-            style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}
-          >
-            Detta är en tema-anpassad modal via Paper. Den följer mörkt/ljust läge automatiskt.
-          </Text>
-          <Button mode="contained" onPress={() => setInfoVisible(false)}>
-            Stäng
-          </Button>
-        </Modal>
-      </Portal>
+  <Modal
+    visible={infoVisible}
+    onDismiss={() => setInfoVisible(false)}
+    contentContainerStyle={[
+      styles.modalCard,
+      { backgroundColor: theme.colors.surface, borderRadius: theme.roundness + 8 },
+    ]}
+  >
+    <Text variant="titleLarge" style={{ marginBottom: 8 }}>
+      Information
+    </Text>
+    <Text
+      variant="bodyMedium"
+      style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}
+    >
+      Appen stödjer både mörkt och ljust läge.  
+      {'\n\n'}
+      • I mörkt läge används dova färger för att minska ögontrötthet, särskilt i svaga ljusförhållanden.
+      {'\n\n'}  
+      • I ljust läge används ljus bakgrund och tydliga kontraster för bättre synlighet i starkt ljus.  
+      {'\n\n'}
+      Du kan växla mellan lägena via inställningen "Mörkt läge" här i menyn. 
+      Alla komponenter, inklusive modaler, anpassas automatiskt efter det valda temat.
+    </Text>
+    <Button mode="contained" onPress={() => setInfoVisible(false)}>
+      Stäng
+    </Button>
+  </Modal>
+</Portal>
     </SafeAreaView>
   );
 }
@@ -564,5 +480,20 @@ const styles = StyleSheet.create({
   },
   title: { marginBottom: 4 },
   card: { borderRadius: 16 },
-  modalCard: { marginHorizontal: 24, padding: 16 },
+  modalCard: {
+    marginHorizontal: 24,
+    padding: 16,
+
+    // Anpassning för webben
+    ...Platform.select({
+      web: {
+        maxWidth: 480,        // gör den smalare på desktop
+        width: '100%',
+        alignSelf: 'center',  // centrera
+      },
+      default: {
+        // mobiler och tablets behåller den gamla layouten
+      },
+    }),
+  },
 });
